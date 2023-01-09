@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { join } from "node:path";
+// import { join } from "node:path";
 
 const readFiles = async (path: string) => {
   try {
@@ -12,17 +12,23 @@ const readFiles = async (path: string) => {
   }
 };
 
-const writeFiles = async (rote: string, name: string, data: string) => {
+const writeFiles = async (rote: string, data: string) => {
   try {
-    const path = join(rote, name);
+    console.log(rote);
 
-    await fs.mkdir(rote, { recursive: true });
+    const path = rote.split(/\\|\//);
+    path.pop();
 
-    const files = await fs.writeFile(path, data, "utf-8");
-    return files;
+    console.log(path);
+
+    await fs.mkdir(path.join("/"), { recursive: true });
+
+    await fs.writeFile(rote, data, "utf-8");
+    return true;
   } catch (error) {
+    debugger;
     console.log(error);
-    return [];
+    return false;
   }
 };
 

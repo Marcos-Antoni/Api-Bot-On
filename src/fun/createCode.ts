@@ -1,11 +1,34 @@
+import { prompt } from "enquirer";
+import { join } from "node:path";
+
+//componentes
 import { BotOn } from "../brain/gpt";
 import { writeFiles } from "../brain/fileDriver";
-import type { Model } from "../types";
+import type { Model, Prompt } from "../types";
 
 const arrayModel: Model[] = ["text-davinci-003", "code-davinci-002"];
 
-const removeFiles = (prompt: string) => {
-  let files = prompt.split("\n");
+const addFiles = async (text: string) => {
+  const res = await prompt<Prompt>([
+    {
+      type: "list",
+      name: "files",
+      message: "Escribe el nombre de los archivos con su extensión",
+    },
+  ]);
+  if (!res.files[0]) return await BotOn(text, arrayModel[0]);
+
+  const listFiles = res.files.map((file, index) => {
+    return `${index === 0 ? "" : index + 1 + "."} ${file}`;
+  });
+  console.log(listFiles);
+
+  const files = listFiles.join("\n");
+  return files;
+};
+
+const removeFiles = (text: string) => {
+  let files = text.split("\n");
 
   files.shift();
 
@@ -16,7 +39,7 @@ const removeFiles = (prompt: string) => {
   return files;
 };
 
-const createFile = (codes: string) => {
+const createFile = async (codes: string) => {
   const route = process.cwd();
   let arrayCode = codes.split('"""');
   arrayCode.pop();
@@ -24,33 +47,36 @@ const createFile = (codes: string) => {
   for (let i = 0; i < arrayCode.length; i += 2) {
     const file = arrayCode[i].replace(/ /g, "").replace(/:/g, "").replace(/\n/g, "");
     const code = arrayCode[i + 1];
+    if (!code || !file) {
+      console.log("Error");
+      break;
+    }
 
-    writeFiles(`${route}/res/`, file, code);
+    writeFiles(join(route, file), code);
   }
 
   console.log("Terminado");
 };
 
 const createCode = async (message: string) => {
-  let prompt = `si quiero programar esto "${message}" crea nombres del archivo con la extensin nesesaria para que funcione:
+  let text = `si quiero programar esto "${message}" crea nombres del archivo con la extensin nesesaria para que funcione:
 1.`;
-  const res = await BotOn(prompt, arrayModel[0]);
+  const res = await addFiles(text);
 
-  prompt += `${res}`;
-  const files = removeFiles(prompt);
-  prompt += "\n\n";
+  text += `${res}`;
+  const files = removeFiles(text);
+  text += "\n\n";
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    prompt += `${file}:
+    text += `${file}:
     """`;
-    const res = await BotOn(prompt, arrayModel[1]);
-    prompt += `${res}"""
+    const res = await BotOn(text, arrayModel[1]);
+    text += `${res}"""
     `;
   }
 
-  const code = prompt.split("\n\n")[1];
-  // console.log(code);
+  const code = text.split("\n\n")[1];
   createFile(code);
 };
 

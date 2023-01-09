@@ -2,7 +2,7 @@ import { program } from "commander";
 import { createCode } from "./fun/createCode";
 
 program
-  .version("0.0.1")
+  .version("0.2.0")
   .description("Type in what you need and Bot On Cli will do it for you.");
 
 program
